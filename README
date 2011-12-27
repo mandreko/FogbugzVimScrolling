@@ -1,0 +1,6 @@
+##Fogbugz VIM Scrolling
+This userscript is for any user of FogCreek's FogBugz software.  It allows you to scroll up and down through your issues using "J" and "K" keys, similarly to how VIM is controlled.
+
+Note: You will need to change the @include directive to point to your FogBugz installation for it to work properly.
+
+View the script on userscripts.org [here](http://userscripts.org/scripts/show/120404): 
