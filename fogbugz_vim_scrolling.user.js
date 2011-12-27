@@ -1,16 +1,14 @@
 // ==UserScript==
 // @name       FogBugz VIM Scrolling
 // @namespace  http://www.mattandreko.com
-// @version    2.0.0.1
+// @version    3.0.0.0
 // @description  Allows you to scroll through bug events in FogBugz using the "j" and "k" keys
-// @include				htt*://support.leafsoftwaresolutions.com/fogbugz/*
-// @require				https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js
+// @include                             htt*://support.leafsoftwaresolutions.com/fogbugz/*
+// @require                             https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js
 // @copyright  2011, Matt Andreko
 // ==/UserScript==
 
 jQuery.fn.reverse = [].reverse;
-
-var bugEvents = $('.bugevent .summary, .pseudobugevent .summary').filter(':visible');
 
 function addStyle(style) {
     "use strict";
@@ -19,9 +17,14 @@ function addStyle(style) {
     return element;
 }
 
+function bugEvents() {
+    "use strict";
+	return $('.bugevent .summary, .pseudobugevent .summary').filter(':visible');
+}
+
 function getCurrentlyHighlightedBugEvent() {
     "use strict";
-    var bugEvent = bugEvents.filter('.highlight');
+    var bugEvent = bugEvents().filter('.highlight');
     return bugEvent;
 }
 
@@ -29,7 +32,7 @@ function isAtTopOfPage() {
     "use strict";
     var currentHighlighted = getCurrentlyHighlightedBugEvent();
     return ($(document).scrollTop() === 0 || // scrolled to the top of the page
-            bugEvents.filter(":first")[0] === currentHighlighted[0]); // first bugevent in the list is the currently selected one
+            bugEvents().filter(":first")[0] === currentHighlighted[0]); // first bugevent in the list is the currently selected one
 }
 
 function isAtBottomOfPage() {
@@ -39,7 +42,7 @@ function isAtBottomOfPage() {
 
 function highlightOnlyThisBugevent(bugEvent) {
     "use strict";
-    bugEvents.each(function () {
+    bugEvents().each(function () {
         $(this).removeClass('highlight');
     });
     bugEvent.addClass('highlight');
@@ -54,13 +57,14 @@ function scrollToElement(element) {
 
 function getNextBugEvent(reverse, fn) {
     "use strict";
-    var list = bugEvents, nextPost = 0, currentPosition = 0;
+    var list = bugEvents(), nextPost = 0, currentPosition = 0;
     if (reverse) {
         list = list.reverse();
     }
     list.each(function () {
         currentPosition = $(this).offset().top;
-        if (fn(currentPosition, $(document).scrollTop())) {
+        // Add Math.floor hack for firefox to scroll properly
+        if (fn(Math.floor(currentPosition), $(document).scrollTop())) {
             nextPost = $(this);
             return false; // break the loop
         }
@@ -92,12 +96,17 @@ function scrollUpToPreviousBugEvent() {
         return;
     }
 
-    // find the previous bugevent
+	// find the previous bugevent
     var currentlyHighlighted = getCurrentlyHighlightedBugEvent(), previousPost = currentlyHighlighted.parent().prev('.bugevent, .pseudobugevent').children('.summary');
 
+	// if we're on an edit page, we may have to look for a previousPost a little differently
+	if (previousPost.length === 0) {
+		previousPost = $('#bugviewContainerEdit .bugevent .summary');
+	}
+	
     // if nothing is highlighted, default to the last element
     if (currentlyHighlighted.length === 0) {
-        previousPost = bugEvents.filter(":last");
+        previousPost = bugEvents().filter(":last");
     } else if (currentlyHighlighted.length <= 0 && previousPost.length <= 0 && previousPost.offset().top <= $(document).scrollTop()) {
         // if not, do normal scroll behavior based on current viewport
         previousPost = getNextBugEvent(true, function (a, b) { return a < b; });
@@ -113,15 +122,17 @@ $(document).ready(function () {
     addStyle('.highlight { background-color: rgb(255, 255, 0); }');
 
     $(this).keydown(function (e) {
-        switch (e.keyCode) {
-        case 74: // J
-        case 106: // j
-            scrollDownToNextBugEvent();
-            break;
-        case 75: // K
-        case 107: // k
-            scrollUpToPreviousBugEvent();
-            break;
-        }
+                if (!$(e.target).is('input, textarea')) {
+                        switch (e.keyCode) {
+                        case 74: // J
+                        case 106: // j
+                                scrollDownToNextBugEvent();
+                                break;
+                        case 75: // K
+                        case 107: // k
+                                scrollUpToPreviousBugEvent();
+                                break;
+                        }
+                }
     });
 });
