@@ -1,25 +1,27 @@
 // ==UserScript==
-// @name       FogBugz Scroller
+// @name       FogBugz VIM Scrolling
 // @namespace  http://www.mattandreko.com
-// @version    1.0
-// @description  FogBugz Scroller
+// @version    2.0.0.1
+// @description  Allows you to scroll through bug events in FogBugz using the "j" and "k" keys
 // @include				htt*://support.leafsoftwaresolutions.com/fogbugz/*
 // @require				https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js
 // @copyright  2011, Matt Andreko
 // ==/UserScript==
 
-var highlightColor = 'rgb(255, 255, 0)'; // yellow
-
 jQuery.fn.reverse = [].reverse;
 
-var bugEvents = $('.bugevent .summary').filter(':visible');
+var bugEvents = $('.bugevent .summary, .pseudobugevent .summary').filter(':visible');
+
+function addStyle(style) {
+    "use strict";
+    var head = $('head')[0], element = head.appendChild(window.document.createElement('style'));
+    element.innerHTML = style;
+    return element;
+}
 
 function getCurrentlyHighlightedBugEvent() {
     "use strict";
-    var bugEvent = bugEvents.filter(function () {
-        return ($(this).css('background-color') === highlightColor);
-    });
-    //var bugEvent = bugEvents.filter('.highlight');
+    var bugEvent = bugEvents.filter('.highlight');
     return bugEvent;
 }
 
@@ -38,9 +40,9 @@ function isAtBottomOfPage() {
 function highlightOnlyThisBugevent(bugEvent) {
     "use strict";
     bugEvents.each(function () {
-        $(this).css("background-color", "");
+        $(this).removeClass('highlight');
     });
-    bugEvent.css("background-color", highlightColor);
+    bugEvent.addClass('highlight');
 }
 
 function scrollToElement(element) {
@@ -72,7 +74,7 @@ function scrollDownToNextBugEvent() {
     // if at the bottom of the page, there is no more scrolling to do, so just highlight the next bugEvent node in the dom
     var currentlyHighlighted = getCurrentlyHighlightedBugEvent(), nextPost;
     if (isAtBottomOfPage()) {
-        nextPost = currentlyHighlighted.parent().next('.bugevent').children('.summary');
+        nextPost = currentlyHighlighted.parent().next('.bugevent, .pseudobugevent').children('.summary');
         if (currentlyHighlighted.length <= 0 || nextPost.length <= 0) { // don't do anything if nothing is highlighted, or if it's the last bugEvent on the page
             return;
         }
@@ -91,7 +93,7 @@ function scrollUpToPreviousBugEvent() {
     }
 
     // find the previous bugevent
-    var currentlyHighlighted = getCurrentlyHighlightedBugEvent(), previousPost = currentlyHighlighted.parent().prev('.bugevent').children('.summary');
+    var currentlyHighlighted = getCurrentlyHighlightedBugEvent(), previousPost = currentlyHighlighted.parent().prev('.bugevent, .pseudobugevent').children('.summary');
 
     // if nothing is highlighted, default to the last element
     if (currentlyHighlighted.length === 0) {
@@ -107,6 +109,9 @@ function scrollUpToPreviousBugEvent() {
 
 $(document).ready(function () {
     "use strict";
+
+    addStyle('.highlight { background-color: rgb(255, 255, 0); }');
+
     $(this).keydown(function (e) {
         switch (e.keyCode) {
         case 74: // J
